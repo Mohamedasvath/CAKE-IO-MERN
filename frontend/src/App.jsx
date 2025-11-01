@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -20,6 +20,8 @@ import AdminOrders from "./pages/AdminOrders";
 
 function AppContent() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(true);
 
@@ -33,21 +35,27 @@ function AppContent() {
     navigate("/login", { replace: true });
   };
 
-  // ✅ Check backend + token status
+  // ✅ Check backend + token status (but only on protected pages)
   const checkServerAndAuth = async () => {
     const token = localStorage.getItem("token");
 
-    // 🟠 If frontend was restarted or reloaded — no token → force login
+    // 🚫 Public routes → skip check
+    const publicRoutes = ["/login", "/signup", "/", "/about", "/contact"];
+    if (publicRoutes.includes(location.pathname)) {
+      setLoading(false);
+      return;
+    }
+
+    // 🟠 No token → redirect to login
     if (!token) {
       handleLogout("🔒 Session expired. Please log in again.");
-      setLoading(false);
+      setLoading(true);
       return;
     }
 
     try {
       // Ping backend
       const response = await axios.get(`${API_URL}/`, { timeout: 2000 });
-
       if (response.status === 200) {
         if (!serverOnline) {
           toast.success("✅ Server reconnected!");
@@ -55,7 +63,6 @@ function AppContent() {
         }
       }
     } catch (error) {
-      // 🔴 Backend DOWN
       if (serverOnline) {
         console.warn("🚨 Server down:", error.message);
         setServerOnline(false);
@@ -67,13 +74,10 @@ function AppContent() {
   };
 
   useEffect(() => {
-    // 🟡 Run check immediately when app loads
     checkServerAndAuth();
-
-    // 🕒 Recheck every 10 seconds
     const interval = setInterval(checkServerAndAuth, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [location.pathname]); // ✅ Runs again when route changes
 
   if (loading) {
     return (
