@@ -151,9 +151,9 @@ const Footer = () => {
           </div>
 
           <p className="text-gray-500 text-sm mt-10">
-            &copy; {new Date().getFullYear()}{" "}
+            
             <span className="text-pink-400 font-semibold">Mohamed Asvath</span>.
-          </p>
+          copyright &copy; {new Date().getFullYear()}{" "}</p>
         </div>
       </div>
 
